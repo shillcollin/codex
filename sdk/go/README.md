@@ -7,6 +7,8 @@ The SDK is organized into two public packages:
 - `github.com/openai/codex/sdk/go/codex` for the ergonomic client API
 - `github.com/openai/codex/sdk/go/protocol` for generated and hand-shaped wire models
 
+For the full API and protocol reference, see [`SDK_REFERENCE.md`](SDK_REFERENCE.md).
+
 ## Quickstart
 
 ```go
