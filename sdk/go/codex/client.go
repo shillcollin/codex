@@ -314,14 +314,19 @@ func (c *Client) subscribeClient() (<-chan protocol.Notification, func()) {
 	cancel := func() {
 		c.subsMu.Lock()
 		defer c.subsMu.Unlock()
+		found := false
 		filtered := c.clientSubs[:0]
 		for _, existing := range c.clientSubs {
 			if existing != ch {
 				filtered = append(filtered, existing)
+				continue
 			}
+			found = true
 		}
 		c.clientSubs = filtered
-		close(ch)
+		if found {
+			close(ch)
+		}
 	}
 
 	return ch, cancel
@@ -337,18 +342,23 @@ func (c *Client) subscribeThread(threadID string) (<-chan protocol.Notification,
 		c.subsMu.Lock()
 		defer c.subsMu.Unlock()
 		subs := c.threadSubs[threadID]
+		found := false
 		filtered := subs[:0]
 		for _, existing := range subs {
 			if existing != ch {
 				filtered = append(filtered, existing)
+				continue
 			}
+			found = true
 		}
 		if len(filtered) == 0 {
 			delete(c.threadSubs, threadID)
 		} else {
 			c.threadSubs[threadID] = filtered
 		}
-		close(ch)
+		if found {
+			close(ch)
+		}
 	}
 
 	return ch, cancel
@@ -364,18 +374,23 @@ func (c *Client) subscribeTurn(turnID string) (<-chan protocol.Notification, fun
 		c.subsMu.Lock()
 		defer c.subsMu.Unlock()
 		subs := c.turnSubs[turnID]
+		found := false
 		filtered := subs[:0]
 		for _, existing := range subs {
 			if existing != ch {
 				filtered = append(filtered, existing)
+				continue
 			}
+			found = true
 		}
 		if len(filtered) == 0 {
 			delete(c.turnSubs, turnID)
 		} else {
 			c.turnSubs[turnID] = filtered
 		}
-		close(ch)
+		if found {
+			close(ch)
+		}
 	}
 
 	return ch, cancel
@@ -437,20 +452,11 @@ func (c *Client) shutdown(err error) {
 		c.pendingMu.Unlock()
 
 		c.subsMu.Lock()
-		for _, sub := range c.clientSubs {
-			close(sub)
-		}
 		c.clientSubs = nil
-		for turnID, subs := range c.turnSubs {
-			for _, sub := range subs {
-				close(sub)
-			}
+		for turnID := range c.turnSubs {
 			delete(c.turnSubs, turnID)
 		}
-		for threadID, subs := range c.threadSubs {
-			for _, sub := range subs {
-				close(sub)
-			}
+		for threadID := range c.threadSubs {
 			delete(c.threadSubs, threadID)
 		}
 		c.subsMu.Unlock()

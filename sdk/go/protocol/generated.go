@@ -18,18 +18,28 @@ type AccountRateLimitsUpdatedNotification struct {
 	RateLimits RateLimitSnapshot `json:"rateLimits"`
 }
 
+type AccountTokenUsageDailyBucket struct {
+	StartDate string `json:"startDate"`
+	Tokens    int64  `json:"tokens"`
+}
+
+type AccountTokenUsageSummary struct {
+	CurrentStreakDays     *int64 `json:"currentStreakDays,omitempty"`
+	LifetimeTokens        *int64 `json:"lifetimeTokens,omitempty"`
+	LongestRunningTurnSec *int64 `json:"longestRunningTurnSec,omitempty"`
+	LongestStreakDays     *int64 `json:"longestStreakDays,omitempty"`
+	PeakDailyTokens       *int64 `json:"peakDailyTokens,omitempty"`
+}
+
 type AccountUpdatedNotification struct {
 	AuthMode *AuthMode `json:"authMode,omitempty"`
 	PlanType *PlanType `json:"planType,omitempty"`
 }
 
 type ActivePermissionProfile struct {
-	Extends       *string                               `json:"extends,omitempty"`
-	ID            string                                `json:"id"`
-	Modifications []ActivePermissionProfileModification `json:"modifications,omitempty"`
+	Extends *string `json:"extends,omitempty"`
+	ID      string  `json:"id"`
 }
-
-type ActivePermissionProfileModification = json.RawMessage
 
 type AddCreditsNudgeCreditType string
 
@@ -45,18 +55,39 @@ const (
 	AddCreditsNudgeEmailStatusCooldownActive AddCreditsNudgeEmailStatus = "cooldown_active"
 )
 
+type AdditionalContextEntry struct {
+	Kind  AdditionalContextKind `json:"kind"`
+	Value string                `json:"value"`
+}
+
+type AdditionalContextKind string
+
+const (
+	AdditionalContextKindUntrusted   AdditionalContextKind = "untrusted"
+	AdditionalContextKindApplication AdditionalContextKind = "application"
+)
+
 type AdditionalFileSystemPermissions struct {
 	Entries          []FileSystemSandboxEntry `json:"entries,omitempty"`
 	GlobScanMaxDepth *int64                   `json:"globScanMaxDepth,omitempty"`
-	Read             []AbsolutePathBuf        `json:"read,omitempty"`
-	Write            []AbsolutePathBuf        `json:"write,omitempty"`
+	Read             []LegacyAppPathString    `json:"read,omitempty"`
+	Write            []LegacyAppPathString    `json:"write,omitempty"`
 }
 
 type AdditionalNetworkPermissions struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
+type AgentMessageInputContent = json.RawMessage
+
 type AgentPath = string
+
+type AmazonBedrockCredentialSource string
+
+const (
+	AmazonBedrockCredentialSourceCodexManaged AmazonBedrockCredentialSource = "codexManaged"
+	AmazonBedrockCredentialSourceAwsManaged   AmazonBedrockCredentialSource = "awsManaged"
+)
 
 type AnalyticsConfig struct {
 	Enabled *bool `json:"enabled,omitempty"`
@@ -72,12 +103,13 @@ type AppBranding struct {
 }
 
 type AppConfig struct {
-	DefaultToolsApprovalMode *AppToolApproval `json:"default_tools_approval_mode,omitempty"`
-	DefaultToolsEnabled      *bool            `json:"default_tools_enabled,omitempty"`
-	DestructiveEnabled       *bool            `json:"destructive_enabled,omitempty"`
-	Enabled                  *bool            `json:"enabled,omitempty"`
-	OpenWorldEnabled         *bool            `json:"open_world_enabled,omitempty"`
-	Tools                    *AppToolsConfig  `json:"tools,omitempty"`
+	ApprovalsReviewer        *ApprovalsReviewer `json:"approvals_reviewer,omitempty"`
+	DefaultToolsApprovalMode *AppToolApproval   `json:"default_tools_approval_mode,omitempty"`
+	DefaultToolsEnabled      *bool              `json:"default_tools_enabled,omitempty"`
+	DestructiveEnabled       *bool              `json:"destructive_enabled,omitempty"`
+	Enabled                  *bool              `json:"enabled,omitempty"`
+	OpenWorldEnabled         *bool              `json:"open_world_enabled,omitempty"`
+	Tools                    *AppToolsConfig    `json:"tools,omitempty"`
 }
 
 type AppInfo struct {
@@ -85,6 +117,8 @@ type AppInfo struct {
 	Branding            *AppBranding      `json:"branding,omitempty"`
 	Description         *string           `json:"description,omitempty"`
 	DistributionChannel *string           `json:"distributionChannel,omitempty"`
+	IconAssets          map[string]string `json:"iconAssets,omitempty"`
+	IconDarkAssets      map[string]string `json:"iconDarkAssets,omitempty"`
 	ID                  string            `json:"id"`
 	InstallUrl          *string           `json:"installUrl,omitempty"`
 	IsAccessible        *bool             `json:"isAccessible,omitempty"`
@@ -126,12 +160,31 @@ type AppScreenshot struct {
 }
 
 type AppSummary struct {
+	Category    *string `json:"category,omitempty"`
 	Description *string `json:"description,omitempty"`
 	ID          string  `json:"id"`
 	InstallUrl  *string `json:"installUrl,omitempty"`
 	Name        string  `json:"name"`
-	NeedsAuth   bool    `json:"needsAuth"`
 }
+
+type AppTemplateSummary struct {
+	CanonicalConnectorId *string                       `json:"canonicalConnectorId,omitempty"`
+	Category             *string                       `json:"category,omitempty"`
+	Description          *string                       `json:"description,omitempty"`
+	LogoUrl              *string                       `json:"logoUrl,omitempty"`
+	LogoUrlDark          *string                       `json:"logoUrlDark,omitempty"`
+	MaterializedAppIds   []string                      `json:"materializedAppIds"`
+	Name                 string                        `json:"name"`
+	Reason               *AppTemplateUnavailableReason `json:"reason,omitempty"`
+	TemplateId           string                        `json:"templateId"`
+}
+
+type AppTemplateUnavailableReason string
+
+const (
+	AppTemplateUnavailableReasonNOTCONFIGUREDFORWORKSPACE AppTemplateUnavailableReason = "NOT_CONFIGURED_FOR_WORKSPACE"
+	AppTemplateUnavailableReasonNOACTIVEWORKSPACE         AppTemplateUnavailableReason = "NO_ACTIVE_WORKSPACE"
+)
 
 type AppToolApproval string
 
@@ -153,9 +206,11 @@ type AppsConfig struct {
 }
 
 type AppsDefaultConfig struct {
-	DestructiveEnabled *bool `json:"destructive_enabled,omitempty"`
-	Enabled            *bool `json:"enabled,omitempty"`
-	OpenWorldEnabled   *bool `json:"open_world_enabled,omitempty"`
+	ApprovalsReviewer        *ApprovalsReviewer `json:"approvals_reviewer,omitempty"`
+	DefaultToolsApprovalMode *AppToolApproval   `json:"default_tools_approval_mode,omitempty"`
+	DestructiveEnabled       *bool              `json:"destructive_enabled,omitempty"`
+	Enabled                  *bool              `json:"enabled,omitempty"`
+	OpenWorldEnabled         *bool              `json:"open_world_enabled,omitempty"`
 }
 
 type AppsListParams struct {
@@ -171,6 +226,8 @@ type AppsListResponse struct {
 }
 
 type AuthMode = json.RawMessage
+
+type AutoCompactTokenLimitScope = json.RawMessage
 
 type AutoReviewDecisionSource string
 
@@ -197,6 +254,8 @@ const (
 	CancelLoginAccountStatusCanceled CancelLoginAccountStatus = "canceled"
 	CancelLoginAccountStatusNotFound CancelLoginAccountStatus = "notFound"
 )
+
+type CapabilityRootLocation = json.RawMessage
 
 type ClientRequest = json.RawMessage
 
@@ -337,30 +396,34 @@ type CommandMigration struct {
 	Name string `json:"name"`
 }
 
+type ComputerUseRequirements struct {
+	AllowLockedComputerUse *bool `json:"allowLockedComputerUse,omitempty"`
+}
+
 type Config struct {
-	Analytics                  *AnalyticsConfig       `json:"analytics,omitempty"`
-	ApprovalPolicy             *AskForApproval        `json:"approval_policy,omitempty"`
-	ApprovalsReviewer          *ApprovalsReviewer     `json:"approvals_reviewer,omitempty"`
-	CompactPrompt              *string                `json:"compact_prompt,omitempty"`
-	DeveloperInstructions      *string                `json:"developer_instructions,omitempty"`
-	ForcedChatgptWorkspaceID   *string                `json:"forced_chatgpt_workspace_id,omitempty"`
-	ForcedLoginMethod          *ForcedLoginMethod     `json:"forced_login_method,omitempty"`
-	Instructions               *string                `json:"instructions,omitempty"`
-	Model                      *string                `json:"model,omitempty"`
-	ModelAutoCompactTokenLimit *int64                 `json:"model_auto_compact_token_limit,omitempty"`
-	ModelContextWindow         *int64                 `json:"model_context_window,omitempty"`
-	ModelProvider              *string                `json:"model_provider,omitempty"`
-	ModelReasoningEffort       *ReasoningEffort       `json:"model_reasoning_effort,omitempty"`
-	ModelReasoningSummary      *ReasoningSummary      `json:"model_reasoning_summary,omitempty"`
-	ModelVerbosity             *Verbosity             `json:"model_verbosity,omitempty"`
-	Profile                    *string                `json:"profile,omitempty"`
-	Profiles                   map[string]ProfileV2   `json:"profiles,omitempty"`
-	ReviewModel                *string                `json:"review_model,omitempty"`
-	SandboxMode                *SandboxMode           `json:"sandbox_mode,omitempty"`
-	SandboxWorkspaceWrite      *SandboxWorkspaceWrite `json:"sandbox_workspace_write,omitempty"`
-	ServiceTier                *string                `json:"service_tier,omitempty"`
-	Tools                      *ToolsV2               `json:"tools,omitempty"`
-	WebSearch                  *WebSearchMode         `json:"web_search,omitempty"`
+	Analytics                       *AnalyticsConfig            `json:"analytics,omitempty"`
+	ApprovalPolicy                  *AskForApproval             `json:"approval_policy,omitempty"`
+	ApprovalsReviewer               *ApprovalsReviewer          `json:"approvals_reviewer,omitempty"`
+	CompactPrompt                   *string                     `json:"compact_prompt,omitempty"`
+	Desktop                         map[string]map[string]any   `json:"desktop,omitempty"`
+	DeveloperInstructions           *string                     `json:"developer_instructions,omitempty"`
+	ForcedChatgptWorkspaceID        *ForcedChatgptWorkspaceIds  `json:"forced_chatgpt_workspace_id,omitempty"`
+	ForcedLoginMethod               *ForcedLoginMethod          `json:"forced_login_method,omitempty"`
+	Instructions                    *string                     `json:"instructions,omitempty"`
+	Model                           *string                     `json:"model,omitempty"`
+	ModelAutoCompactTokenLimit      *int64                      `json:"model_auto_compact_token_limit,omitempty"`
+	ModelAutoCompactTokenLimitScope *AutoCompactTokenLimitScope `json:"model_auto_compact_token_limit_scope,omitempty"`
+	ModelContextWindow              *int64                      `json:"model_context_window,omitempty"`
+	ModelProvider                   *string                     `json:"model_provider,omitempty"`
+	ModelReasoningEffort            *ReasoningEffort            `json:"model_reasoning_effort,omitempty"`
+	ModelReasoningSummary           *ReasoningSummary           `json:"model_reasoning_summary,omitempty"`
+	ModelVerbosity                  *Verbosity                  `json:"model_verbosity,omitempty"`
+	ReviewModel                     *string                     `json:"review_model,omitempty"`
+	SandboxMode                     *SandboxMode                `json:"sandbox_mode,omitempty"`
+	SandboxWorkspaceWrite           *SandboxWorkspaceWrite      `json:"sandbox_workspace_write,omitempty"`
+	ServiceTier                     *string                     `json:"service_tier,omitempty"`
+	Tools                           *ToolsV2                    `json:"tools,omitempty"`
+	WebSearch                       *WebSearchMode              `json:"web_search,omitempty"`
 }
 
 type ConfigBatchWriteParams struct {
@@ -402,11 +465,18 @@ type ConfigReadResponse struct {
 }
 
 type ConfigRequirements struct {
-	AllowedApprovalPolicies []AskForApproval      `json:"allowedApprovalPolicies,omitempty"`
-	AllowedSandboxModes     []SandboxMode         `json:"allowedSandboxModes,omitempty"`
-	AllowedWebSearchModes   []WebSearchMode       `json:"allowedWebSearchModes,omitempty"`
-	EnforceResidency        *ResidencyRequirement `json:"enforceResidency,omitempty"`
-	FeatureRequirements     map[string]bool       `json:"featureRequirements,omitempty"`
+	AllowAppshots                        *bool                     `json:"allowAppshots,omitempty"`
+	AllowManagedHooksOnly                *bool                     `json:"allowManagedHooksOnly,omitempty"`
+	AllowRemoteControl                   *bool                     `json:"allowRemoteControl,omitempty"`
+	AllowedApprovalPolicies              []AskForApproval          `json:"allowedApprovalPolicies,omitempty"`
+	AllowedPermissionProfiles            map[string]bool           `json:"allowedPermissionProfiles,omitempty"`
+	AllowedSandboxModes                  []SandboxMode             `json:"allowedSandboxModes,omitempty"`
+	AllowedWebSearchModes                []WebSearchMode           `json:"allowedWebSearchModes,omitempty"`
+	AllowedWindowsSandboxImplementations []WindowsSandboxSetupMode `json:"allowedWindowsSandboxImplementations,omitempty"`
+	ComputerUse                          *ComputerUseRequirements  `json:"computerUse,omitempty"`
+	DefaultPermissions                   *string                   `json:"defaultPermissions,omitempty"`
+	EnforceResidency                     *ResidencyRequirement     `json:"enforceResidency,omitempty"`
+	FeatureRequirements                  map[string]bool           `json:"featureRequirements,omitempty"`
 }
 
 type ConfigRequirementsReadResponse struct {
@@ -442,12 +512,30 @@ type ConfiguredHookMatcherGroup struct {
 	Matcher *string                 `json:"matcher,omitempty"`
 }
 
+type ConsumeAccountRateLimitResetCreditOutcome = json.RawMessage
+
+type ConsumeAccountRateLimitResetCreditParams struct {
+	IdempotencyKey string `json:"idempotencyKey"`
+}
+
+type ConsumeAccountRateLimitResetCreditResponse struct {
+	Outcome ConsumeAccountRateLimitResetCreditOutcome `json:"outcome"`
+}
+
 type ContentItem = json.RawMessage
 
 type ContextCompactedNotification struct {
 	ThreadId string `json:"threadId"`
 	TurnId   string `json:"turnId"`
 }
+
+type ConversationTextRole string
+
+const (
+	ConversationTextRoleUser      ConversationTextRole = "user"
+	ConversationTextRoleDeveloper ConversationTextRole = "developer"
+	ConversationTextRoleAssistant ConversationTextRole = "assistant"
+)
 
 type CreditsSnapshot struct {
 	Balance    *string `json:"balance,omitempty"`
@@ -470,13 +558,9 @@ const (
 	DynamicToolCallStatusFailed     DynamicToolCallStatus = "failed"
 )
 
-type DynamicToolSpec struct {
-	DeferLoading *bool          `json:"deferLoading,omitempty"`
-	Description  string         `json:"description"`
-	InputSchema  map[string]any `json:"inputSchema"`
-	Name         string         `json:"name"`
-	Namespace    *string        `json:"namespace,omitempty"`
-}
+type DynamicToolNamespaceTool = json.RawMessage
+
+type DynamicToolSpec = json.RawMessage
 
 type ErrorNotification struct {
 	Error     TurnError `json:"error"`
@@ -504,8 +588,9 @@ type ExperimentalFeatureEnablementSetResponse struct {
 }
 
 type ExperimentalFeatureListParams struct {
-	Cursor *string `json:"cursor,omitempty"`
-	Limit  *int64  `json:"limit,omitempty"`
+	Cursor   *string `json:"cursor,omitempty"`
+	Limit    *int64  `json:"limit,omitempty"`
+	ThreadId *string `json:"threadId,omitempty"`
 }
 
 type ExperimentalFeatureListResponse struct {
@@ -524,13 +609,57 @@ type ExternalAgentConfigDetectResponse struct {
 	Items []ExternalAgentConfigMigrationItem `json:"items"`
 }
 
-type ExternalAgentConfigImportCompletedNotification = json.RawMessage
+type ExternalAgentConfigImportCompletedNotification struct {
+	ImportId        string                                `json:"importId"`
+	ItemTypeResults []ExternalAgentConfigImportTypeResult `json:"itemTypeResults"`
+}
+
+type ExternalAgentConfigImportHistoriesReadResponse struct {
+	Data []ExternalAgentConfigImportHistory `json:"data"`
+}
+
+type ExternalAgentConfigImportHistory struct {
+	CompletedAtMs int64                                      `json:"completedAtMs"`
+	Failures      []ExternalAgentConfigImportItemTypeFailure `json:"failures"`
+	ImportId      string                                     `json:"importId"`
+	Successes     []ExternalAgentConfigImportItemTypeSuccess `json:"successes"`
+}
+
+type ExternalAgentConfigImportItemTypeFailure struct {
+	Cwd          *string                              `json:"cwd,omitempty"`
+	ErrorType    *string                              `json:"errorType,omitempty"`
+	FailureStage string                               `json:"failureStage"`
+	ItemType     ExternalAgentConfigMigrationItemType `json:"itemType"`
+	Message      string                               `json:"message"`
+	Source       *string                              `json:"source,omitempty"`
+}
+
+type ExternalAgentConfigImportItemTypeSuccess struct {
+	Cwd      *string                              `json:"cwd,omitempty"`
+	ItemType ExternalAgentConfigMigrationItemType `json:"itemType"`
+	Source   *string                              `json:"source,omitempty"`
+	Target   *string                              `json:"target,omitempty"`
+}
 
 type ExternalAgentConfigImportParams struct {
 	MigrationItems []ExternalAgentConfigMigrationItem `json:"migrationItems"`
+	Source         *string                            `json:"source,omitempty"`
 }
 
-type ExternalAgentConfigImportResponse = json.RawMessage
+type ExternalAgentConfigImportProgressNotification struct {
+	ImportId        string                                `json:"importId"`
+	ItemTypeResults []ExternalAgentConfigImportTypeResult `json:"itemTypeResults"`
+}
+
+type ExternalAgentConfigImportResponse struct {
+	ImportId string `json:"importId"`
+}
+
+type ExternalAgentConfigImportTypeResult struct {
+	Failures  []ExternalAgentConfigImportItemTypeFailure `json:"failures"`
+	ItemType  ExternalAgentConfigMigrationItemType       `json:"itemType"`
+	Successes []ExternalAgentConfigImportItemTypeSuccess `json:"successes"`
+}
 
 type ExternalAgentConfigMigrationItem struct {
 	Cwd         *string                              `json:"cwd,omitempty"`
@@ -556,7 +685,7 @@ const (
 type FeedbackUploadParams struct {
 	Classification string            `json:"classification"`
 	ExtraLogFiles  []string          `json:"extraLogFiles,omitempty"`
-	IncludeLogs    bool              `json:"includeLogs"`
+	IncludeLogs    *bool             `json:"includeLogs,omitempty"`
 	Reason         *string           `json:"reason,omitempty"`
 	Tags           map[string]string `json:"tags,omitempty"`
 	ThreadId       *string           `json:"threadId,omitempty"`
@@ -585,7 +714,7 @@ type FileSystemAccessMode string
 const (
 	FileSystemAccessModeRead  FileSystemAccessMode = "read"
 	FileSystemAccessModeWrite FileSystemAccessMode = "write"
-	FileSystemAccessModeNone  FileSystemAccessMode = "none"
+	FileSystemAccessModeDeny  FileSystemAccessMode = "deny"
 )
 
 type FileSystemPath = json.RawMessage
@@ -602,6 +731,8 @@ type FileUpdateChange struct {
 	Kind PatchChangeKind `json:"kind"`
 	Path string          `json:"path"`
 }
+
+type ForcedChatgptWorkspaceIds = json.RawMessage
 
 type ForcedLoginMethod string
 
@@ -735,13 +866,24 @@ type GetAccountParams struct {
 }
 
 type GetAccountRateLimitsResponse struct {
-	RateLimits          json.RawMessage              `json:"rateLimits"`
-	RateLimitsByLimitId map[string]RateLimitSnapshot `json:"rateLimitsByLimitId,omitempty"`
+	RateLimitResetCredits *RateLimitResetCreditsSummary `json:"rateLimitResetCredits,omitempty"`
+	RateLimits            json.RawMessage               `json:"rateLimits"`
+	RateLimitsByLimitId   map[string]RateLimitSnapshot  `json:"rateLimitsByLimitId,omitempty"`
 }
 
 type GetAccountResponse struct {
 	Account            *Account `json:"account,omitempty"`
 	RequiresOpenaiAuth bool     `json:"requiresOpenaiAuth"`
+}
+
+type GetAccountTokenUsageResponse struct {
+	DailyUsageBuckets []AccountTokenUsageDailyBucket `json:"dailyUsageBuckets,omitempty"`
+	Summary           AccountTokenUsageSummary       `json:"summary"`
+}
+
+type GetWorkspaceMessagesResponse struct {
+	FeatureEnabled bool               `json:"featureEnabled"`
+	Messages       []WorkspaceMessage `json:"messages"`
 }
 
 type GitInfo struct {
@@ -820,6 +962,8 @@ const (
 	HookEventNamePostCompact       HookEventName = "postCompact"
 	HookEventNameSessionStart      HookEventName = "sessionStart"
 	HookEventNameUserPromptSubmit  HookEventName = "userPromptSubmit"
+	HookEventNameSubagentStart     HookEventName = "subagentStart"
+	HookEventNameSubagentStop      HookEventName = "subagentStop"
 	HookEventNameStop              HookEventName = "stop"
 )
 
@@ -924,6 +1068,7 @@ const (
 	HookSourceSessionFlags            HookSource = "sessionFlags"
 	HookSourcePlugin                  HookSource = "plugin"
 	HookSourceCloudRequirements       HookSource = "cloudRequirements"
+	HookSourceCloudManagedConfig      HookSource = "cloudManagedConfig"
 	HookSourceLegacyManagedConfigFile HookSource = "legacyManagedConfigFile"
 	HookSourceLegacyManagedConfigMdm  HookSource = "legacyManagedConfigMdm"
 	HookSourceUnknown                 HookSource = "unknown"
@@ -970,6 +1115,10 @@ const (
 
 type InputModality = json.RawMessage
 
+type InternalChatMessageMetadataPassthrough struct {
+	TurnID *string `json:"turn_id,omitempty"`
+}
+
 type ItemGuardianApprovalReviewCompletedNotification struct {
 	Action         GuardianApprovalReviewAction `json:"action"`
 	CompletedAtMs  int64                        `json:"completedAtMs"`
@@ -999,10 +1148,13 @@ type ItemStartedNotification struct {
 	TurnId      string     `json:"turnId"`
 }
 
+type LegacyAppPathString = string
+
 type ListMcpServerStatusParams struct {
-	Cursor *string                `json:"cursor,omitempty"`
-	Detail *McpServerStatusDetail `json:"detail,omitempty"`
-	Limit  *int64                 `json:"limit,omitempty"`
+	Cursor   *string                `json:"cursor,omitempty"`
+	Detail   *McpServerStatusDetail `json:"detail,omitempty"`
+	Limit    *int64                 `json:"limit,omitempty"`
+	ThreadId *string                `json:"threadId,omitempty"`
 }
 
 type ListMcpServerStatusResponse struct {
@@ -1034,6 +1186,8 @@ type ManagedHooksRequirements struct {
 	PreToolUse        []ConfiguredHookMatcherGroup `json:"PreToolUse"`
 	SessionStart      []ConfiguredHookMatcherGroup `json:"SessionStart"`
 	Stop              []ConfiguredHookMatcherGroup `json:"Stop"`
+	SubagentStart     []ConfiguredHookMatcherGroup `json:"SubagentStart"`
+	SubagentStop      []ConfiguredHookMatcherGroup `json:"SubagentStop"`
 	UserPromptSubmit  []ConfiguredHookMatcherGroup `json:"UserPromptSubmit"`
 	ManagedDir        *string                      `json:"managedDir,omitempty"`
 	WindowsManagedDir *string                      `json:"windowsManagedDir,omitempty"`
@@ -1103,6 +1257,15 @@ type McpResourceReadResponse struct {
 	Contents []ResourceContent `json:"contents"`
 }
 
+type McpServerInfo struct {
+	Description *string          `json:"description,omitempty"`
+	Icons       []map[string]any `json:"icons,omitempty"`
+	Name        string           `json:"name"`
+	Title       *string          `json:"title,omitempty"`
+	Version     string           `json:"version"`
+	WebsiteUrl  *string          `json:"websiteUrl,omitempty"`
+}
+
 type McpServerMigration struct {
 	Name string `json:"name"`
 }
@@ -1139,6 +1302,7 @@ type McpServerStatus struct {
 	Name              string             `json:"name"`
 	ResourceTemplates []ResourceTemplate `json:"resourceTemplates"`
 	Resources         []Resource         `json:"resources"`
+	ServerInfo        *McpServerInfo     `json:"serverInfo,omitempty"`
 	Tools             map[string]Tool    `json:"tools"`
 }
 
@@ -1150,9 +1314,10 @@ const (
 )
 
 type McpServerStatusUpdatedNotification struct {
-	Error  *string               `json:"error,omitempty"`
-	Name   string                `json:"name"`
-	Status McpServerStartupState `json:"status"`
+	Error    *string               `json:"error,omitempty"`
+	Name     string                `json:"name"`
+	Status   McpServerStartupState `json:"status"`
+	ThreadId *string               `json:"threadId,omitempty"`
 }
 
 type McpServerToolCallParams struct {
@@ -1168,6 +1333,12 @@ type McpServerToolCallResponse struct {
 	Content           []map[string]any `json:"content"`
 	IsError           *bool            `json:"isError,omitempty"`
 	StructuredContent map[string]any   `json:"structuredContent,omitempty"`
+}
+
+type McpToolCallAppContext struct {
+	ConnectorId string  `json:"connectorId"`
+	LinkId      *string `json:"linkId,omitempty"`
+	ResourceUri *string `json:"resourceUri,omitempty"`
 }
 
 type McpToolCallError struct {
@@ -1220,6 +1391,7 @@ type MigrationDetails struct {
 	McpServers []McpServerMigration `json:"mcpServers,omitempty"`
 	Plugins    []PluginsMigration   `json:"plugins,omitempty"`
 	Sessions   []SessionMigration   `json:"sessions,omitempty"`
+	Skills     []SkillMigration     `json:"skills,omitempty"`
 	Subagents  []SubagentMigration  `json:"subagents,omitempty"`
 }
 
@@ -1262,6 +1434,16 @@ type ModelReroutedNotification struct {
 	TurnId    string             `json:"turnId"`
 }
 
+type ModelSafetyBufferingUpdatedNotification struct {
+	FasterModel     *string  `json:"fasterModel,omitempty"`
+	Model           string   `json:"model"`
+	Reasons         []string `json:"reasons"`
+	ShowBufferingUi bool     `json:"showBufferingUi"`
+	ThreadId        string   `json:"threadId"`
+	TurnId          string   `json:"turnId"`
+	UseCases        []string `json:"useCases"`
+}
+
 type ModelServiceTier struct {
 	Description string `json:"description"`
 	ID          string `json:"id"`
@@ -1286,6 +1468,14 @@ type ModelVerificationNotification struct {
 	TurnId        string              `json:"turnId"`
 	Verifications []ModelVerification `json:"verifications"`
 }
+
+type MultiAgentMode string
+
+const (
+	MultiAgentModeNone                MultiAgentMode = "none"
+	MultiAgentModeExplicitRequestOnly MultiAgentMode = "explicitRequestOnly"
+	MultiAgentModeProactive           MultiAgentMode = "proactive"
+)
 
 type NetworkAccess string
 
@@ -1330,7 +1520,7 @@ type NetworkUnixSocketPermission string
 
 const (
 	NetworkUnixSocketPermissionAllow NetworkUnixSocketPermission = "allow"
-	NetworkUnixSocketPermissionNone  NetworkUnixSocketPermission = "none"
+	NetworkUnixSocketPermissionDeny  NetworkUnixSocketPermission = "deny"
 )
 
 type NonSteerableTurnKind string
@@ -1357,17 +1547,22 @@ const (
 
 type PatchChangeKind = json.RawMessage
 
-type PermissionProfile = json.RawMessage
-
-type PermissionProfileFileSystemPermissions = json.RawMessage
-
-type PermissionProfileModificationParams = json.RawMessage
-
-type PermissionProfileNetworkPermissions struct {
-	Enabled bool `json:"enabled"`
+type PermissionProfileListParams struct {
+	Cursor *string `json:"cursor,omitempty"`
+	Cwd    *string `json:"cwd,omitempty"`
+	Limit  *int64  `json:"limit,omitempty"`
 }
 
-type PermissionProfileSelectionParams = json.RawMessage
+type PermissionProfileListResponse struct {
+	Data       []PermissionProfileSummary `json:"data"`
+	NextCursor *string                    `json:"nextCursor,omitempty"`
+}
+
+type PermissionProfileSummary struct {
+	Allowed     bool    `json:"allowed"`
+	Description *string `json:"description,omitempty"`
+	ID          string  `json:"id"`
+}
 
 type PlanDeltaNotification struct {
 	Delta    string `json:"delta"`
@@ -1403,14 +1598,16 @@ const (
 type PluginAvailability = json.RawMessage
 
 type PluginDetail struct {
-	Apps            []AppSummary        `json:"apps"`
-	Description     *string             `json:"description,omitempty"`
-	Hooks           []PluginHookSummary `json:"hooks"`
-	MarketplaceName string              `json:"marketplaceName"`
-	MarketplacePath *AbsolutePathBuf    `json:"marketplacePath,omitempty"`
-	McpServers      []string            `json:"mcpServers"`
-	Skills          []SkillSummary      `json:"skills"`
-	Summary         PluginSummary       `json:"summary"`
+	AppTemplates    []AppTemplateSummary `json:"appTemplates"`
+	Apps            []AppSummary         `json:"apps"`
+	Description     *string              `json:"description,omitempty"`
+	Hooks           []PluginHookSummary  `json:"hooks"`
+	MarketplaceName string               `json:"marketplaceName"`
+	MarketplacePath *AbsolutePathBuf     `json:"marketplacePath,omitempty"`
+	McpServers      []string             `json:"mcpServers"`
+	ShareUrl        *string              `json:"shareUrl,omitempty"`
+	Skills          []SkillSummary       `json:"skills"`
+	Summary         PluginSummary        `json:"summary"`
 }
 
 type PluginHookSummary struct {
@@ -1437,6 +1634,16 @@ type PluginInstallResponse struct {
 	AuthPolicy      PluginAuthPolicy `json:"authPolicy"`
 }
 
+type PluginInstalledParams struct {
+	Cwds                         []AbsolutePathBuf `json:"cwds,omitempty"`
+	InstallSuggestionPluginNames []string          `json:"installSuggestionPluginNames,omitempty"`
+}
+
+type PluginInstalledResponse struct {
+	MarketplaceLoadErrors []MarketplaceLoadErrorInfo `json:"marketplaceLoadErrors,omitempty"`
+	Marketplaces          []PluginMarketplaceEntry   `json:"marketplaces"`
+}
+
 type PluginInterface struct {
 	BrandColor        *string           `json:"brandColor,omitempty"`
 	Capabilities      []string          `json:"capabilities"`
@@ -1447,7 +1654,9 @@ type PluginInterface struct {
 	DeveloperName     *string           `json:"developerName,omitempty"`
 	DisplayName       *string           `json:"displayName,omitempty"`
 	Logo              *AbsolutePathBuf  `json:"logo,omitempty"`
+	LogoDark          *AbsolutePathBuf  `json:"logoDark,omitempty"`
 	LogoUrl           *string           `json:"logoUrl,omitempty"`
+	LogoUrlDark       *string           `json:"logoUrlDark,omitempty"`
 	LongDescription   *string           `json:"longDescription,omitempty"`
 	PrivacyPolicyUrl  *string           `json:"privacyPolicyUrl,omitempty"`
 	ScreenshotUrls    []string          `json:"screenshotUrls"`
@@ -1461,8 +1670,10 @@ type PluginListMarketplaceKind string
 
 const (
 	PluginListMarketplaceKindLocal              PluginListMarketplaceKind = "local"
+	PluginListMarketplaceKindVertical           PluginListMarketplaceKind = "vertical"
 	PluginListMarketplaceKindWorkspaceDirectory PluginListMarketplaceKind = "workspace-directory"
 	PluginListMarketplaceKindSharedWithMe       PluginListMarketplaceKind = "shared-with-me"
+	PluginListMarketplaceKindCreatedByMeRemote  PluginListMarketplaceKind = "created-by-me-remote"
 )
 
 type PluginListParams struct {
@@ -1493,12 +1704,28 @@ type PluginReadResponse struct {
 	Plugin PluginDetail `json:"plugin"`
 }
 
+type PluginShareCheckoutParams struct {
+	RemotePluginId string `json:"remotePluginId"`
+}
+
+type PluginShareCheckoutResponse struct {
+	MarketplaceName string          `json:"marketplaceName"`
+	MarketplacePath AbsolutePathBuf `json:"marketplacePath"`
+	PluginId        string          `json:"pluginId"`
+	PluginName      string          `json:"pluginName"`
+	PluginPath      AbsolutePathBuf `json:"pluginPath"`
+	RemotePluginId  string          `json:"remotePluginId"`
+	RemoteVersion   *string         `json:"remoteVersion,omitempty"`
+}
+
 type PluginShareContext struct {
-	CreatorAccountUserId *string                `json:"creatorAccountUserId,omitempty"`
-	CreatorName          *string                `json:"creatorName,omitempty"`
-	RemotePluginId       string                 `json:"remotePluginId"`
-	ShareTargets         []PluginSharePrincipal `json:"shareTargets,omitempty"`
-	ShareUrl             *string                `json:"shareUrl,omitempty"`
+	CreatorAccountUserId *string                     `json:"creatorAccountUserId,omitempty"`
+	CreatorName          *string                     `json:"creatorName,omitempty"`
+	Discoverability      *PluginShareDiscoverability `json:"discoverability,omitempty"`
+	RemotePluginId       string                      `json:"remotePluginId"`
+	RemoteVersion        *string                     `json:"remoteVersion,omitempty"`
+	SharePrincipals      []PluginSharePrincipal      `json:"sharePrincipals,omitempty"`
+	ShareUrl             *string                     `json:"shareUrl,omitempty"`
 }
 
 type PluginShareDeleteParams struct {
@@ -1518,7 +1745,6 @@ const (
 type PluginShareListItem struct {
 	LocalPluginPath *AbsolutePathBuf `json:"localPluginPath,omitempty"`
 	Plugin          PluginSummary    `json:"plugin"`
-	ShareUrl        string           `json:"shareUrl"`
 }
 
 type PluginShareListParams = json.RawMessage
@@ -1531,7 +1757,16 @@ type PluginSharePrincipal struct {
 	Name          string                   `json:"name"`
 	PrincipalId   string                   `json:"principalId"`
 	PrincipalType PluginSharePrincipalType `json:"principalType"`
+	Role          PluginSharePrincipalRole `json:"role"`
 }
+
+type PluginSharePrincipalRole string
+
+const (
+	PluginSharePrincipalRoleReader PluginSharePrincipalRole = "reader"
+	PluginSharePrincipalRoleEditor PluginSharePrincipalRole = "editor"
+	PluginSharePrincipalRoleOwner  PluginSharePrincipalRole = "owner"
+)
 
 type PluginSharePrincipalType string
 
@@ -1556,7 +1791,15 @@ type PluginShareSaveResponse struct {
 type PluginShareTarget struct {
 	PrincipalId   string                   `json:"principalId"`
 	PrincipalType PluginSharePrincipalType `json:"principalType"`
+	Role          PluginShareTargetRole    `json:"role"`
 }
+
+type PluginShareTargetRole string
+
+const (
+	PluginShareTargetRoleReader PluginShareTargetRole = "reader"
+	PluginShareTargetRoleEditor PluginShareTargetRole = "editor"
+)
 
 type PluginShareUpdateDiscoverability string
 
@@ -1589,17 +1832,19 @@ type PluginSkillReadResponse struct {
 type PluginSource = json.RawMessage
 
 type PluginSummary struct {
-	AuthPolicy    PluginAuthPolicy    `json:"authPolicy"`
-	Availability  json.RawMessage     `json:"availability,omitempty"`
-	Enabled       bool                `json:"enabled"`
-	ID            string              `json:"id"`
-	InstallPolicy PluginInstallPolicy `json:"installPolicy"`
-	Installed     bool                `json:"installed"`
-	Interface     *PluginInterface    `json:"interface,omitempty"`
-	Keywords      []string            `json:"keywords,omitempty"`
-	Name          string              `json:"name"`
-	ShareContext  *PluginShareContext `json:"shareContext,omitempty"`
-	Source        PluginSource        `json:"source"`
+	AuthPolicy     PluginAuthPolicy    `json:"authPolicy"`
+	Availability   json.RawMessage     `json:"availability,omitempty"`
+	Enabled        bool                `json:"enabled"`
+	ID             string              `json:"id"`
+	InstallPolicy  PluginInstallPolicy `json:"installPolicy"`
+	Installed      bool                `json:"installed"`
+	Interface      *PluginInterface    `json:"interface,omitempty"`
+	Keywords       []string            `json:"keywords,omitempty"`
+	LocalVersion   *string             `json:"localVersion,omitempty"`
+	Name           string              `json:"name"`
+	RemotePluginId *string             `json:"remotePluginId,omitempty"`
+	ShareContext   *PluginShareContext `json:"shareContext,omitempty"`
+	Source         PluginSource        `json:"source"`
 }
 
 type PluginUninstallParams struct {
@@ -1636,20 +1881,6 @@ type ProcessTerminalSize struct {
 	Rows int64 `json:"rows"`
 }
 
-type ProfileV2 struct {
-	ApprovalPolicy        *AskForApproval    `json:"approval_policy,omitempty"`
-	ApprovalsReviewer     *ApprovalsReviewer `json:"approvals_reviewer,omitempty"`
-	ChatgptBaseURL        *string            `json:"chatgpt_base_url,omitempty"`
-	Model                 *string            `json:"model,omitempty"`
-	ModelProvider         *string            `json:"model_provider,omitempty"`
-	ModelReasoningEffort  *ReasoningEffort   `json:"model_reasoning_effort,omitempty"`
-	ModelReasoningSummary *ReasoningSummary  `json:"model_reasoning_summary,omitempty"`
-	ModelVerbosity        *Verbosity         `json:"model_verbosity,omitempty"`
-	ServiceTier           *string            `json:"service_tier,omitempty"`
-	Tools                 *ToolsV2           `json:"tools,omitempty"`
-	WebSearch             *WebSearchMode     `json:"web_search,omitempty"`
-}
-
 type RateLimitReachedType string
 
 const (
@@ -1660,14 +1891,19 @@ const (
 	RateLimitReachedTypeWorkspaceMemberUsageLimitReached RateLimitReachedType = "workspace_member_usage_limit_reached"
 )
 
+type RateLimitResetCreditsSummary struct {
+	AvailableCount int64 `json:"availableCount"`
+}
+
 type RateLimitSnapshot struct {
-	Credits              *CreditsSnapshot      `json:"credits,omitempty"`
-	LimitId              *string               `json:"limitId,omitempty"`
-	LimitName            *string               `json:"limitName,omitempty"`
-	PlanType             *PlanType             `json:"planType,omitempty"`
-	Primary              *RateLimitWindow      `json:"primary,omitempty"`
-	RateLimitReachedType *RateLimitReachedType `json:"rateLimitReachedType,omitempty"`
-	Secondary            *RateLimitWindow      `json:"secondary,omitempty"`
+	Credits              *CreditsSnapshot           `json:"credits,omitempty"`
+	IndividualLimit      *SpendControlLimitSnapshot `json:"individualLimit,omitempty"`
+	LimitId              *string                    `json:"limitId,omitempty"`
+	LimitName            *string                    `json:"limitName,omitempty"`
+	PlanType             *PlanType                  `json:"planType,omitempty"`
+	Primary              *RateLimitWindow           `json:"primary,omitempty"`
+	RateLimitReachedType *RateLimitReachedType      `json:"rateLimitReachedType,omitempty"`
+	Secondary            *RateLimitWindow           `json:"secondary,omitempty"`
 }
 
 type RateLimitWindow struct {
@@ -1768,9 +2004,18 @@ const (
 	RemoteControlConnectionStatusErrored    RemoteControlConnectionStatus = "errored"
 )
 
+type RemoteControlDisableParams struct {
+	Ephemeral *bool `json:"ephemeral,omitempty"`
+}
+
+type RemoteControlEnableParams struct {
+	Ephemeral *bool `json:"ephemeral,omitempty"`
+}
+
 type RemoteControlStatusChangedNotification struct {
 	EnvironmentId  *string                       `json:"environmentId,omitempty"`
 	InstallationId string                        `json:"installationId"`
+	ServerName     string                        `json:"serverName"`
 	Status         RemoteControlConnectionStatus `json:"status"`
 }
 
@@ -1837,6 +2082,11 @@ type SandboxWorkspaceWrite struct {
 	WritableRoots       []string `json:"writable_roots,omitempty"`
 }
 
+type SelectedCapabilityRoot struct {
+	ID       string          `json:"id"`
+	Location json.RawMessage `json:"location"`
+}
+
 type SendAddCreditsNudgeEmailParams struct {
 	CreditType AddCreditsNudgeCreditType `json:"creditType"`
 }
@@ -1895,6 +2145,10 @@ type SkillMetadata struct {
 	ShortDescription *string            `json:"shortDescription,omitempty"`
 }
 
+type SkillMigration struct {
+	Name string `json:"name"`
+}
+
 type SkillScope string
 
 const (
@@ -1934,6 +2188,12 @@ type SkillsConfigWriteResponse struct {
 	EffectiveEnabled bool `json:"effectiveEnabled"`
 }
 
+type SkillsExtraRootsSetParams struct {
+	ExtraRoots []AbsolutePathBuf `json:"extraRoots"`
+}
+
+type SkillsExtraRootsSetResponse = json.RawMessage
+
 type SkillsListEntry struct {
 	Cwd    string           `json:"cwd"`
 	Errors []SkillErrorInfo `json:"errors"`
@@ -1954,6 +2214,21 @@ type SortDirection string
 const (
 	SortDirectionAsc  SortDirection = "asc"
 	SortDirectionDesc SortDirection = "desc"
+)
+
+type SpendControlLimitSnapshot struct {
+	Limit            string `json:"limit"`
+	RemainingPercent int64  `json:"remainingPercent"`
+	ResetsAt         int64  `json:"resetsAt"`
+	Used             string `json:"used"`
+}
+
+type SubAgentActivityKind string
+
+const (
+	SubAgentActivityKindStarted     SubAgentActivityKind = "started"
+	SubAgentActivityKindInteracted  SubAgentActivityKind = "interacted"
+	SubAgentActivityKindInterrupted SubAgentActivityKind = "interrupted"
 )
 
 type SubAgentSource = json.RawMessage
@@ -2015,6 +2290,18 @@ type ThreadCompactStartParams struct {
 	ThreadId string `json:"threadId"`
 }
 
+type ThreadDeleteParams struct {
+	ThreadId string `json:"threadId"`
+}
+
+type ThreadDeleteResponse = json.RawMessage
+
+type ThreadDeletedNotification struct {
+	ThreadId string `json:"threadId"`
+}
+
+type ThreadExtra = json.RawMessage
+
 type ThreadGoal struct {
 	CreatedAt       int64            `json:"createdAt"`
 	Objective       string           `json:"objective"`
@@ -2026,8 +2313,35 @@ type ThreadGoal struct {
 	UpdatedAt       int64            `json:"updatedAt"`
 }
 
+type ThreadGoalClearParams struct {
+	ThreadId string `json:"threadId"`
+}
+
+type ThreadGoalClearResponse struct {
+	Cleared bool `json:"cleared"`
+}
+
 type ThreadGoalClearedNotification struct {
 	ThreadId string `json:"threadId"`
+}
+
+type ThreadGoalGetParams struct {
+	ThreadId string `json:"threadId"`
+}
+
+type ThreadGoalGetResponse struct {
+	Goal *ThreadGoal `json:"goal,omitempty"`
+}
+
+type ThreadGoalSetParams struct {
+	Objective   *string           `json:"objective,omitempty"`
+	Status      *ThreadGoalStatus `json:"status,omitempty"`
+	ThreadId    string            `json:"threadId"`
+	TokenBudget *int64            `json:"tokenBudget,omitempty"`
+}
+
+type ThreadGoalSetResponse struct {
+	Goal ThreadGoal `json:"goal"`
 }
 
 type ThreadGoalStatus string
@@ -2035,6 +2349,8 @@ type ThreadGoalStatus string
 const (
 	ThreadGoalStatusActive        ThreadGoalStatus = "active"
 	ThreadGoalStatusPaused        ThreadGoalStatus = "paused"
+	ThreadGoalStatusBlocked       ThreadGoalStatus = "blocked"
+	ThreadGoalStatusUsageLimited  ThreadGoalStatus = "usageLimited"
 	ThreadGoalStatusBudgetLimited ThreadGoalStatus = "budgetLimited"
 	ThreadGoalStatusComplete      ThreadGoalStatus = "complete"
 )
@@ -2147,6 +2463,12 @@ type ThreadRealtimeTranscriptDoneNotification struct {
 	ThreadId string `json:"threadId"`
 }
 
+type ThreadResumeInitialTurnsPageParams struct {
+	ItemsView     *TurnItemsView `json:"itemsView,omitempty"`
+	Limit         *int64         `json:"limit,omitempty"`
+	SortDirection *SortDirection `json:"sortDirection,omitempty"`
+}
+
 type ThreadRollbackParams struct {
 	NumTurns int64  `json:"numTurns"`
 	ThreadId string `json:"threadId"`
@@ -2156,9 +2478,34 @@ type ThreadRollbackResponse struct {
 	Thread json.RawMessage `json:"thread"`
 }
 
+type ThreadSearchResult struct {
+	Snippet string `json:"snippet"`
+	Thread  Thread `json:"thread"`
+}
+
 type ThreadSetNameParams struct {
 	Name     string `json:"name"`
 	ThreadId string `json:"threadId"`
+}
+
+type ThreadSettings struct {
+	ActivePermissionProfile *ActivePermissionProfile `json:"activePermissionProfile,omitempty"`
+	ApprovalPolicy          AskForApproval           `json:"approvalPolicy"`
+	ApprovalsReviewer       ApprovalsReviewer        `json:"approvalsReviewer"`
+	CollaborationMode       CollaborationMode        `json:"collaborationMode"`
+	Cwd                     AbsolutePathBuf          `json:"cwd"`
+	Effort                  *ReasoningEffort         `json:"effort,omitempty"`
+	Model                   string                   `json:"model"`
+	ModelProvider           string                   `json:"modelProvider"`
+	Personality             *Personality             `json:"personality,omitempty"`
+	SandboxPolicy           SandboxPolicy            `json:"sandboxPolicy"`
+	ServiceTier             *string                  `json:"serviceTier,omitempty"`
+	Summary                 *ReasoningSummary        `json:"summary,omitempty"`
+}
+
+type ThreadSettingsUpdatedNotification struct {
+	ThreadId       string         `json:"threadId"`
+	ThreadSettings ThreadSettings `json:"threadSettings"`
 }
 
 type ThreadShellCommandParams struct {
@@ -2168,13 +2515,7 @@ type ThreadShellCommandParams struct {
 
 type ThreadShellCommandResponse = json.RawMessage
 
-type ThreadSource string
-
-const (
-	ThreadSourceUser                ThreadSource = "user"
-	ThreadSourceSubagent            ThreadSource = "subagent"
-	ThreadSourceMemoryConsolidation ThreadSource = "memory_consolidation"
-)
+type ThreadSource = string
 
 type ThreadStartSource string
 
@@ -2236,7 +2577,6 @@ type Tool struct {
 }
 
 type ToolsV2 struct {
-	ViewImage *bool                `json:"view_image,omitempty"`
 	WebSearch *WebSearchToolConfig `json:"web_search,omitempty"`
 }
 
@@ -2247,8 +2587,8 @@ type TurnDiffUpdatedNotification struct {
 }
 
 type TurnEnvironmentParams struct {
-	Cwd           AbsolutePathBuf `json:"cwd"`
-	EnvironmentId string          `json:"environmentId"`
+	Cwd           LegacyAppPathString `json:"cwd"`
+	EnvironmentId string              `json:"environmentId"`
 }
 
 type TurnInterruptParams struct {
@@ -2257,6 +2597,12 @@ type TurnInterruptParams struct {
 }
 
 type TurnItemsView = json.RawMessage
+
+type TurnModerationMetadataNotification struct {
+	Metadata map[string]any `json:"metadata"`
+	ThreadId string         `json:"threadId"`
+	TurnId   string         `json:"turnId"`
+}
 
 type TurnPlanStep struct {
 	Status TurnPlanStepStatus `json:"status"`
@@ -2284,9 +2630,16 @@ type TurnStartedNotification struct {
 }
 
 type TurnSteerParams struct {
-	ExpectedTurnId string      `json:"expectedTurnId"`
-	Input          []UserInput `json:"input"`
-	ThreadId       string      `json:"threadId"`
+	ClientUserMessageId *string     `json:"clientUserMessageId,omitempty"`
+	ExpectedTurnId      string      `json:"expectedTurnId"`
+	Input               []UserInput `json:"input"`
+	ThreadId            string      `json:"threadId"`
+}
+
+type TurnsPage struct {
+	BackwardsCursor *string `json:"backwardsCursor,omitempty"`
+	Data            []Turn  `json:"data"`
+	NextCursor      *string `json:"nextCursor,omitempty"`
 }
 
 type Verbosity string
@@ -2324,6 +2677,7 @@ type WebSearchMode string
 const (
 	WebSearchModeDisabled WebSearchMode = "disabled"
 	WebSearchModeCached   WebSearchMode = "cached"
+	WebSearchModeIndexed  WebSearchMode = "indexed"
 	WebSearchModeLive     WebSearchMode = "live"
 )
 
@@ -2372,6 +2726,22 @@ type WindowsWorldWritableWarningNotification struct {
 	FailedScan  bool     `json:"failedScan"`
 	SamplePaths []string `json:"samplePaths"`
 }
+
+type WorkspaceMessage struct {
+	ArchivedAt  *int64               `json:"archivedAt,omitempty"`
+	CreatedAt   *int64               `json:"createdAt,omitempty"`
+	MessageBody string               `json:"messageBody"`
+	MessageId   string               `json:"messageId"`
+	MessageType WorkspaceMessageType `json:"messageType"`
+}
+
+type WorkspaceMessageType string
+
+const (
+	WorkspaceMessageTypeHeadline     WorkspaceMessageType = "headline"
+	WorkspaceMessageTypeAnnouncement WorkspaceMessageType = "announcement"
+	WorkspaceMessageTypeUnknown      WorkspaceMessageType = "unknown"
+)
 
 type WriteStatus string
 

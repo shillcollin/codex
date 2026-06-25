@@ -174,10 +174,29 @@ type SandboxPolicy = json.RawMessage
 type ThreadStatus string
 
 const (
-	ThreadStatusNotLoaded ThreadStatus = "notLoaded"
-	ThreadStatusLoading   ThreadStatus = "loading"
-	ThreadStatusLoaded    ThreadStatus = "loaded"
+	ThreadStatusNotLoaded   ThreadStatus = "notLoaded"
+	ThreadStatusLoading     ThreadStatus = "loading"
+	ThreadStatusLoaded      ThreadStatus = "loaded"
+	ThreadStatusIdle        ThreadStatus = "idle"
+	ThreadStatusSystemError ThreadStatus = "systemError"
+	ThreadStatusActive      ThreadStatus = "active"
 )
+
+func (s *ThreadStatus) UnmarshalJSON(data []byte) error {
+	var legacy string
+	if err := json.Unmarshal(data, &legacy); err == nil {
+		*s = ThreadStatus(legacy)
+		return nil
+	}
+	var object struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &object); err != nil {
+		return err
+	}
+	*s = ThreadStatus(object.Type)
+	return nil
+}
 
 type ThreadSortKey string
 

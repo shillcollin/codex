@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	irpc "github.com/openai/codex/sdk/go/internal/jsonrpc"
+	"github.com/openai/codex/sdk/go/internal/transport/stdio"
 	"github.com/openai/codex/sdk/go/protocol"
 )
 
@@ -106,6 +108,41 @@ func TestClientNotificationsIncludeThreadScopedEvents(t *testing.T) {
 		t.Fatalf("unexpected stream error: %v", err)
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for thread-scoped event")
+	}
+}
+
+func TestClientShutdownDoesNotDoubleCloseNotificationSubscriptions(t *testing.T) {
+	client := &Client{
+		transport:  &stdio.Transport{},
+		threadSubs: make(map[string][]chan protocol.Notification),
+		turnSubs:   make(map[string][]chan protocol.Notification),
+		closed:     make(chan struct{}),
+	}
+
+	handle := &TurnHandle{client: client, ThreadID: "thread-1", TurnID: "turn-1"}
+	events, errs := handle.Stream(context.Background())
+
+	client.shutdown(errors.New("test shutdown"))
+
+	select {
+	case _, ok := <-events:
+		if ok {
+			t.Fatal("expected notification stream to close after shutdown")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for notification stream to close")
+	}
+
+	select {
+	case err, ok := <-errs:
+		if !ok {
+			return
+		}
+		if err == nil || !strings.Contains(err.Error(), "test shutdown") {
+			t.Fatalf("unexpected shutdown stream error: %v", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for notification stream error")
 	}
 }
 

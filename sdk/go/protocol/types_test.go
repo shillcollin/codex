@@ -15,6 +15,26 @@ func TestResourceContentUnmarshalText(t *testing.T) {
 	}
 }
 
+func TestThreadStatusUnmarshalAcceptsLegacyString(t *testing.T) {
+	var thread Thread
+	if err := json.Unmarshal([]byte(`{"id":"thread-1","status":"loaded"}`), &thread); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+	if thread.Status != ThreadStatusLoaded {
+		t.Fatalf("Thread.Status = %q, want %q", thread.Status, ThreadStatusLoaded)
+	}
+}
+
+func TestThreadStatusUnmarshalAcceptsObjectUnion(t *testing.T) {
+	var thread Thread
+	if err := json.Unmarshal([]byte(`{"id":"thread-1","status":{"type":"active","activeFlags":[]}}`), &thread); err != nil {
+		t.Fatalf("Unmarshal returned error: %v", err)
+	}
+	if thread.Status != ThreadStatusActive {
+		t.Fatalf("Thread.Status = %q, want %q", thread.Status, ThreadStatusActive)
+	}
+}
+
 func TestThreadRealtimeStartTransportMarshalWebrtc(t *testing.T) {
 	transport := NewThreadRealtimeWebrtcTransport("offer-sdp")
 	data, err := json.Marshal(transport)
